@@ -20,7 +20,7 @@ find_package(OpenCV)
 # custom messages
 find_package(message_generation)
 
-find_library(GENERATOR_LIB_SLI grasp_candidates_generator_sli HINTS "/homeL/demo/overlays/sli_gpg/")
+find_library(GENERATOR_LIB_SLI grasp_candidates_generator_sli HINTS "/homeL/demo/overlays/sli_gpg/lib")
 find_path(GENERATOR_LIB_SLI_INCLUDE_DIR gpg/grasp.h HINTS "/homeL/demo/overlays/sli_gpg/include/")
 include_directories(${GENERATOR_LIB_SLI_INCLUDE_DIR})
 message("sli_gpg_DIR: " ${GENERATOR_LIB_SLI})
