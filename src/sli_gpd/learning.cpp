@@ -278,8 +278,8 @@ std::vector<cv::Mat> Learning::createImages15Channels(const std::vector<GraspSet
 
   // Calculate shadow length (= max length of shadow required to fill image window).
   double shadow_length = image_dims.maxCoeff();
-
-  std::vector<cv::Mat> images(hand_set_list.size() * num_orientations_, cv::Mat(60, 60, CV_8UC(15), cv::Scalar(0.0)));
+//  std::vector<cv::Mat> images(hand_set_list.size() * num_orientations_ , cv::Mat(60, 60, CV_8UC(15), cv::Scalar(0.0)));
+ std::vector<cv::Mat> images(hand_set_list.size() * num_orientations_ * num_orientations_/2, cv::Mat(60, 60, CV_8UC(15), cv::Scalar(0.0)));
   int num_images = 0;
 
 #ifdef _OPENMP // parallelization using OpenMP
@@ -297,7 +297,8 @@ std::vector<cv::Mat> Learning::createImages15Channels(const std::vector<GraspSet
       {
         if (hand_set_list[i].getIsValid()(j))
         {
-          const int idx = i * num_orientations_ + j;
+          //const int idx = i * num_orientations_ + j;
+          const int idx = i * num_orientations_ * num_orientations_ /2+ j;
           images[idx] = createImage15Channels(nn_points_list[i], shadow, hands[j]);
           num_images++;
         }
