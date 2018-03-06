@@ -173,6 +173,7 @@ public:
    * \return the grasps that are in clusters
    */
   std::vector<Grasp> findClusters(const std::vector<Grasp>& grasps);
+  std::vector<Grasp> GenerateClusters(const CloudCamera& cloud_cam,const std::vector<Grasp>& hand_list, bool remove_inliers);
 
   /**
    * \brief Compare if the score of a grasp is larger than the score of another grasp.
@@ -184,8 +185,6 @@ public:
   {
     return hypothesis1.getScore() > hypothesis2.getScore();
   }
-
-
 private:
 
   CandidatesGenerator* candidates_generator_; ///< pointer to object for grasp candidate generation
@@ -216,6 +215,7 @@ private:
   std::vector<double> workspace_; ///< the workspace of the robot
   bool use_gmm_; ///< if use gmm
   bool downward_filter_;
+  bool select_strategy_;
   // selection parameters
   int num_selected_; ///< the number of selected grasps
 };

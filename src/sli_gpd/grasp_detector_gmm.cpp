@@ -162,7 +162,8 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
     }
 
     tf::Matrix3x3 uptf;
-    uptf.setRotation(transform.inverse().getRotation());
+    //uptf.setRotation(transform.inverse().getRotation());
+    uptf.setRotation(transform.getRotation());
     Eigen::Matrix3d trans;
     tf::matrixTFToEigen(uptf,trans);
 

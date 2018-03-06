@@ -84,12 +84,14 @@ GraspDetector::GraspDetector(ros::NodeHandle& node)
   int min_inliers;
   node.param("min_inliers", min_inliers, 0);
   clustering_ = new Clustering(min_inliers);
-  cluster_grasps_ = min_inliers > 0 ? true : false;
+  node.param("cluster_grasps", cluster_grasps_, false);
+  //cluster_grasps_ = min_inliers > 0 ? true : false;
 
   // Read grasp selection parameters
   node.param("num_selected", num_selected_, 100);
   node.param("use_gmm", use_gmm_, false);
   node.param("downward_filter",downward_filter_,false);
+  node.param("select_strategy",select_strategy_,false);
 }
 
 
@@ -151,6 +153,7 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
   {
     std::cout<<"use downward_filter_"<<std::endl;
     //listen to the transform, in order to transfer the vector
+    //the transform from frame /table_top to frame kinect2_rgb_optical_frame.
     tf::StampedTransform transform;
     try{
       tf_listener->waitForTransform("kinect2_rgb_optical_frame","/table_top", ros::Time::now(),ros::Duration(5.0));
@@ -290,16 +293,13 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
     }
     else
     {
-      clustered_grasps = valid_grasps;
+      if (select_strategy_)
+        clustered_grasps = GenerateClusters(valid_grasps);
+      else
+        clustered_grasps = valid_grasps;
     }
   }
-  clustered_grasps = findClusters(valid_grasps);
 
-
-
-
-  // clustered_grasps.resize(0);
-  // clustered_grasps = gmm_valid_grasps;
   // 5. Select highest-scoring grasps.
   if (clustered_grasps.size() > num_selected_)
   {
@@ -529,6 +529,55 @@ std::vector<Grasp> GraspDetector::classifyGraspCandidates(const CloudCamera& clo
   return valid_grasps;
 }
 
+std::vector<Grasp> GraspDetector::classifyGraspClusters(const CloudCamera& cloud_cam,
+  std::vector<Grasp>& candidates)
+{
+  // Create a grasp image for each grasp candidate.
+  double t0 = omp_get_wtime();
+  std::cout << "Creating grasp images for classifier input ...\n";
+  std::vector<float> scores;
+  std::vector<Grasp> grasp_list;
+
+  std::vector<cv::Mat> image_list = learning_->createImages(cloud_cam, candidates);
+  std::cout << " Image creation time: " << omp_get_wtime() - t0 << std::endl;
+
+  std::vector<Grasp> valid_grasps;
+  std::vector<cv::Mat> valid_images;
+  extractGraspsAndImages(candidates, image_list, valid_grasps, valid_images);
+  // Classify the grasp images.
+  double t0_prediction = omp_get_wtime();
+  scores = classifier_->classifyImages(valid_images);
+  grasp_list.assign(valid_grasps.begin(), valid_grasps.end());
+  std::cout << " Prediction time: " << omp_get_wtime() - t0 << std::endl;
+  }
+
+  // Select grasps with a score of at least <min_score_diff_>.
+  std::vector<Grasp> valid_grasps;
+
+  for (int i = 0; i < grasp_list.size(); i++)
+  {
+    if (scores[i] >= min_score_diff_)
+    {
+      std::cout << "grasp #" << i << ", score: " << scores[i] << "\n";
+      valid_grasps.push_back(grasp_list[i]);
+      valid_grasps[valid_grasps.size() - 1].setScore(scores[i]);
+      valid_grasps[valid_grasps.size() - 1].setFullAntipodal(true);
+    }
+  }
+
+  std::cout << "Found clustered" << valid_grasps.size() << " grasps with a score >= " << min_score_diff_ << "\n";
+  std::cout << "Total classification time: " << omp_get_wtime() - t0 << std::endl;
+
+  if (plot_valid_grasps_)
+  {
+    Plot plotter;
+    const HandSearch::Parameters& params = candidates_generator_->getHandSearchParams();
+    plotter.plotFingers3D(valid_grasps, cloud_cam.getCloudOriginal(), "Valid Grasps", params.hand_outer_diameter_,
+      params.finger_width_, params.hand_depth_, params.hand_height_);
+  }
+  return valid_grasps;
+}
+
 std::vector<GraspSet> GraspDetector::filterGraspsWorkspace(const std::vector<GraspSet>& hand_set_list,
   const std::vector<double>& workspace)
 {
@@ -716,7 +765,7 @@ std::vector<Grasp> GraspDetector::from_feature_vec(arma::mat& v)
    return grasps;
 }
 
-std::vector<Grasp> Clustering::findClusters(const std::vector<Grasp>& hand_list, bool remove_inliers)
+std::vector<Grasp> GraspDetector::GenerateClusters(const CloudCamera& cloud_cam,const std::vector<Grasp>& hand_list, bool remove_inliers)
 {
   // const double AXIS_ALIGN_ANGLE_THRESH = 15.0 * M_PI/180.0;
   const double AXIS_ALIGN_ANGLE_THRESH = 12.0 * M_PI/180.0;
@@ -724,8 +773,6 @@ std::vector<Grasp> Clustering::findClusters(const std::vector<Grasp>& hand_list,
   // const double MAX_DIST_THRESH = 0.07;
   const double MAX_DIST_THRESH = 0.05;
   //  const int max_inliers = 50;
-  std::vector<double> hands_score;
-  hands_score.resize(hand_list.size());
   std::vector<Grasp> hands_out;
   std::vector<bool> has_used;
   if (remove_inliers)
@@ -736,30 +783,35 @@ std::vector<Grasp> Clustering::findClusters(const std::vector<Grasp>& hand_list,
       has_used[i] = false;
     }
   }
-
+  std::vector<Grasp> rank_grasps;
   std::vector<int> inliers;
+  std::partial_sort(hand_list.begin(), hand_list.begin() + 20, hand_list.end(),
+    isClusterScoreGreater);
+  rank_grasps.assign(hand_list.begin(), hand_list.end());
 
-  for (int i = 0; i < hand_list.size(); i++)
+  for (int i = 0; i < 20; i++)
   {
+    std::vector<Grasp> handcluster; //store every hand's clustered grasps
+    handcluster.reseize(0);
     int num_inliers = 0;
     Eigen::Vector3d position_delta = Eigen::Vector3d::Zero();
-    Eigen::Matrix3d axis_outer_prod = hand_list[i].getAxis() * hand_list[i].getAxis().transpose();
+    Eigen::Matrix3d axis_outer_prod = rank_grasps[i].getAxis() * rank_grasps[i].getAxis().transpose();
     inliers.resize(0);
     double mean = 0.0;
     double standard_deviation = 0.0;
     std::vector<double> scores(0);
 
-    for (int j = 0; j < hand_list.size(); j++)
+    for (int j = 0; j < rank_grasps.size(); j++)
     {
       if (i == j || (remove_inliers && has_used[j]))
         continue;
 
       // Which hands have an axis within <AXIS_ALIGN_ANGLE_THRESH> of this one?
-      double axis_aligned = hand_list[i].getAxis().transpose() * hand_list[j].getAxis();
+      double axis_aligned = rank_grasps[i].getAxis().transpose() * rank_grasps[j].getAxis();
       bool axis_aligned_binary = fabs(axis_aligned) > cos(AXIS_ALIGN_ANGLE_THRESH);
 
       // Which hands are within <MAX_DIST_THRESH> of this one?
-      Eigen::Vector3d delta_pos = hand_list[i].getGraspBottom() - hand_list[j].getGraspBottom();
+      Eigen::Vector3d delta_pos = rank_grasps[i].getGraspBottom() - rank_grasps[j].getGraspBottom();
       double delta_pos_mag = delta_pos.norm();
       bool delta_pos_mag_binary = delta_pos_mag <= MAX_DIST_THRESH;
 
@@ -774,56 +826,91 @@ std::vector<Grasp> Clustering::findClusters(const std::vector<Grasp>& hand_list,
       if (inlier_binary)
       {
         inliers.push_back(i);
-        scores.push_back(hand_list[j].getScore());
+        scores.push_back(rank_grasps[j].getScore());
         num_inliers++;
-        position_delta += hand_list[j].getGraspBottom();
-        mean += hand_list[j].getScore();
-        standard_deviation += hand_list[j].getScore() * hand_list[j].getScore();
+        position_delta += rank_grasps[j].getGraspBottom();
+        mean += rank_grasps[j].getScore();
+        standard_deviation += rank_grasps[j].getScore() * rank_grasps[j].getScore();
+        handcluster.push_back(rank_grasps[j]);//store rank_grasps[j]
         if (remove_inliers)
         {
           has_used[j] = true;
         }
       }
     }
-
+    min_inliers_=3;
     if (num_inliers >= min_inliers_)
     {
-      position_delta = position_delta / (double) num_inliers - hand_list[i].getGraspBottom();
+      position_delta = position_delta / (double) num_inliers - rank_grasps[i].getGraspBottom();
       mean = std::max(mean / (double) num_inliers, (double) num_inliers);
       standard_deviation = standard_deviation == 0.0 ? 0.0 : sqrt(standard_deviation/(double) num_inliers - mean*mean);
       std::nth_element(scores.begin(), scores.begin() + scores.size()/2, scores.end());
       double median = scores[scores.size()/2];
       double conf_lb = mean - 2.576*standard_deviation/sqrt((double)num_inliers);
       double conf_ub = mean + 2.576*standard_deviation/sqrt((double)num_inliers);
-      Grasp hand = hand_list[i];
+      Grasp hand = rank_grasps[i];
       hand.setGraspSurface(hand.getGraspSurface() + position_delta);
       hand.setGraspBottom(hand.getGraspBottom() + position_delta);
       hand.setGraspTop(hand.getGraspTop() + position_delta);
       // hand.setScore(avg_score);
-      hand.setScore(conf_lb);
-      hand.setFullAntipodal(hand_list[i].isFullAntipodal());
-      //hands_out.push_back(hand);
-      hand_list.push_back(hand);
-      hand_mean.push_back(mean);
+      hand.setScore(conf_lb+mean);
+      hand.setFullAntipodal(rank_grasps[i].isFullAntipodal());
+
+      rank_grasps[i].setScore(rank_grasps[i].getScore()+mean);
+      for (int m = 0; m < handcluster.size(); m++)
+      {
+        handcluster.setScore(handcluster.getScore()+mean);
+      }
+      hands_out.push_back(hand);
+      rank_grasps.push_back(hand);
     }
     else
     {
       //generate some grasp which near to current grasp
-
+      std::Vector<Grasp> new_hands;
       Eigen::Matrix3d rot;
-      Eigen::VectorXd angles_ = Eigen::VectorXd::LinSpaced(4, -12.0 * M_PI/180, 12.0 * M_PI/180);
-      for (int i = 0; i < angles_.rows(); i++)
-    {
-      rot <<  cos(angles_(i)),  -1.0 * sin(angles_(i)),   0.0,
-        sin(angles_(i)),  cos(angles_(i)),          0.0,
-        0.0,              0.0,                      1.0;
+      Eigen::Vector3d pos_;
+      Eigen::Vector2d angles_<< -8.0 * M_PI/180, 8.0 * M_PI/180;
+      for (int n = 0; n < angles_.rows(); i++)
+      {
+        Grasp hand = rank_grasps[i];
+        rot <<  cos(angles_(n)),  -1.0 * sin(angles_(n)),   0.0,
+                sin(angles_(n)),  cos(angles_(n)),          0.0,
+                0.0,              0.0,                      1.0;
 
-      frame_rot.noalias() = hand_list[i].getFrame()* rot;
+        Eigen::Matrix3d frame_rot.noalias() = rank_grasps[i].getFrame()* rot;
+        hand.pose_.frame_= frame_rot;
+        Eigen::VectorXd zdists_ = Eigen::VectorXd::LinSpaced(4, -0.05, 0.05);
+        Eigen::VectorXd ydists_ = Eigen::VectorXd::LinSpaced(4, -0.05, 0.05);
+        for (int d = 0; d < zdist_.rows(); d++)
+        {
+          for (int t = 0; t < ydist_.rows(); t++)
+          {
+            pos_ << 0.0, ydists_(t), zdists_(d);
+            hand.setGraspBottom(hand.getGraspBottom() +frame_rot * pos_ );
+            hand.setGraspSurface(hand.getGraspSurface() + frame_rot * pos_);
+            hand.setGraspTop(hand.getGraspTop() + frame_rot * pos_);
+            hand.setFullAntipodal(rank_grasps[i].isFullAntipodal());
+            handcluster.push_back(hand);
+          }
+        }
+      }
+      clu_valid_grasps = classifyGraspClusters(cloud_cam, handcluster);
+      double clu_sum=0.0;
+      for (int i = 0; i < clu_valid_grasps.size(); i++)
+      {
+        clu_sum = clu_sum + clu_valid_grasps[i].getScore();
+      }
+      double clu_score_mean= clu_sum / (double) clu_valid_grasps.size();
 
-      hand.setGraspSurface(hand.getGraspSurface() + position_delta);
-      hand.setGraspBottom(hand.getGraspBottom() + position_delta);
-      hand.setGraspTop(hand.getGraspTop() + position_delta);
+      rank_grasps[i].setScore(rank_grasps[i].getScore()+clu_score_mean);
+      for (int i = 0; i < clu_valid_grasps.size(); i++)
+      {
+        clu_valid_grasps[i].setScore(clu_valid_grasps[i].getScore()+clu_score_mean);
+        hand_out.push_back(clu_valid_grasps[i]);
+      }
     }
+    hand_out.push_back(rank_grasps[i]);
   }
-  return mean;
+  return hand_out;
 }
