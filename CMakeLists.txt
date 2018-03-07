@@ -5,7 +5,7 @@ project(sli_gpd)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS cmake_modules eigen_conversions tf tf_conversions geometry_msgs message_generation roscpp
-  sensor_msgs std_msgs)
+  sensor_msgs std_msgs ros_gpg)
 
 # PCL
 find_package(Armadillo REQUIRED)
@@ -20,11 +20,11 @@ find_package(OpenCV)
 # custom messages
 find_package(message_generation)
 
-find_library(GENERATOR_LIB_SLI grasp_candidates_generator_sli HINTS "/homeL/demo/overlays/sli_gpg/lib")
-find_path(GENERATOR_LIB_SLI_INCLUDE_DIR gpg/grasp.h HINTS "/homeL/demo/overlays/sli_gpg/include/")
+#find_library(GENERATOR_LIB_SLI grasp_candidates_generator_ros HINTS "/homeL/demo/ws_grasp/devel/lib/")
+find_path(GENERATOR_LIB_SLI_INCLUDE_DIR gpg/grasp.h HINTS "/homeL/demo/ws_grasp/src/ros_gpg/include")
 include_directories(${GENERATOR_LIB_SLI_INCLUDE_DIR})
-message("sli_gpg_DIR: " ${GENERATOR_LIB_SLI})
-message("sli_gpg_include_DIR: " ${GENERATOR_LIB_SLI_INCLUDE_DIR} )
+#message("ros_gpg_DIR: " ${GENERATOR_LIB_SLI})
+message("ros_gpg_include_DIR: " ${GENERATOR_LIB_SLI_INCLUDE_DIR} )
 # CAFFE
 IF(NOT EXISTS ${CAFFE_DIR})
   SET(CAFFE_DIR "$ENV{CAFFE_DIR}")
@@ -39,88 +39,18 @@ add_definitions(${Caffe_DEFINITIONS})
 set(CMAKE_CXX_FLAGS "-DNDEBUG -O3 -fopenmp -flto -Wno-deprecated -Wenum-compare")
 # set(CMAKE_CXX_FLAGS "-DNDEBUG -O3 -fopenmp -flto -mavx -mfma -Wno-deprecated -Wenum-compare")
 
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
-################################################
-## Declare ROS messages, services and actions ##
-################################################
-
-## To declare and build messages, services or actions from within this
-## package, follow these steps:
-## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
-##   * add a build_depend tag for "message_generation"
-##   * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
-##     but can be declared for certainty nonetheless:
-##     * add a run_depend tag for "message_runtime"
-## * In this file (CMakeLists.txt):
-##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
-##     catkin_package(CATKIN_DEPENDS ...)
-##   * uncomment the add_*_files sections below as needed
-##     and list every .msg/.srv/.action file to be processed
-##   * uncomment the generate_messages entry below
-##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
 add_message_files(FILES CloudIndexed.msg CloudSamples.msg CloudSources.msg GraspConfig.msg GraspConfigList.msg
   SamplesMsg.msg)
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(DEPENDENCIES geometry_msgs sensor_msgs std_msgs)
 
-################################################
-## Declare ROS dynamic reconfigure parameters ##
-################################################
-
-## To declare and build dynamic reconfigure parameters within this
-## package, follow these steps:
-## * In the file package.xml:
-##   * add a build_depend and a run_depend tag for "dynamic_reconfigure"
-## * In this file (CMakeLists.txt):
-##   * add "dynamic_reconfigure" to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * uncomment the "generate_dynamic_reconfigure_options" section below
-##     and list every .cfg file to be processed
-
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 INCLUDE_DIRS include
-CATKIN_DEPENDS cmake_modules eigen_conversions geometry_msgs message_runtime roscpp sensor_msgs std_msgs
+CATKIN_DEPENDS cmake_modules eigen_conversions geometry_msgs message_runtime roscpp sensor_msgs std_msgs ros_gpg
 DEPENDS Eigen OpenCV PCL
 )
 
@@ -131,6 +61,7 @@ DEPENDS Eigen OpenCV PCL
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(include ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}_caffe_classifier src/${PROJECT_NAME}/caffe_classifier.cpp)
@@ -168,11 +99,11 @@ target_link_libraries(${PROJECT_NAME}_caffe_classifier
                       ${OpenCV_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_clustering
-                      ${GENERATOR_LIB_SLI})
+                      ros_gpg_grasp_candidates_generator)
 
 target_link_libraries(${PROJECT_NAME}_create_grasp_images
                       ${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES})
 
@@ -181,20 +112,20 @@ target_link_libraries(${PROJECT_NAME}_create_training_data
 
 target_link_libraries(${PROJECT_NAME}_data_generator
                       ${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${Caffe_LIBRARIES}
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_generate_candidates
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_classify_candidates
                       ${PROJECT_NAME}_grasp_detector
                       ${PROJECT_NAME}_sequential_importance_sampling
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
@@ -203,7 +134,7 @@ target_link_libraries(${PROJECT_NAME}_grasp_detector
                       ${PROJECT_NAME}_caffe_classifier
                       ${PROJECT_NAME}_clustering
                       ${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${Caffe_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
@@ -212,7 +143,7 @@ target_link_libraries(${PROJECT_NAME}_grasp_detector_gmm
                       ${PROJECT_NAME}_caffe_classifier
                       ${PROJECT_NAME}_clustering
                       ${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${Caffe_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
@@ -225,19 +156,19 @@ target_link_libraries(${PROJECT_NAME}_grasp_image_15_channels
 
 target_link_libraries(${PROJECT_NAME}_learning
                       ${PROJECT_NAME}_grasp_image_15_channels
-                      ${GENERATOR_LIB_SLI})
+                      ros_gpg_grasp_candidates_generator)
 
 target_link_libraries(${PROJECT_NAME}_detect_grasps
                       ${PROJECT_NAME}_grasp_detector
                       ${PROJECT_NAME}_sequential_importance_sampling
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${PCL_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_detect_grasps_gmm
                       ${PROJECT_NAME}_grasp_detector_gmm
                       ${PROJECT_NAME}_sequential_importance_sampling
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${PCL_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
 
@@ -247,37 +178,36 @@ target_link_libraries(${PROJECT_NAME}_sequential_importance_sampling
 
 target_link_libraries(${PROJECT_NAME}_test_occlusion
                       ${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES}
                       ${Caffe_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${Caffe_LIBRARIES})
-
 # Rename targets to simplify their names.
 set_target_properties(${PROJECT_NAME}_detect_grasps
-                      PROPERTIES OUTPUT_NAME detect_grasps
+                      PROPERTIES OUTPUT_NAME detect_grasps_sli
                       PREFIX "")
 
 set_target_properties(${PROJECT_NAME}_detect_grasps_gmm
-                      PROPERTIES OUTPUT_NAME detect_grasps_gmm
+                      PROPERTIES OUTPUT_NAME detect_grasps_sli
                       PREFIX "")
 
 set_target_properties(${PROJECT_NAME}_classify_candidates
-                      PROPERTIES OUTPUT_NAME classify_candidates
+                      PROPERTIES OUTPUT_NAME classify_candidates_sli
                       PREFIX "")
 
 set_target_properties(${PROJECT_NAME}_create_grasp_images
-                      PROPERTIES OUTPUT_NAME create_grasp_images
+                      PROPERTIES OUTPUT_NAME create_grasp_images_sli
                       PREFIX "")
 
 set_target_properties(${PROJECT_NAME}_create_training_data
-                      PROPERTIES OUTPUT_NAME create_training_data
+                      PROPERTIES OUTPUT_NAME create_training_data_sli
                       PREFIX "")
 
 set_target_properties(${PROJECT_NAME}_test_occlusion
-                      PROPERTIES OUTPUT_NAME test_occlusion
+                      PROPERTIES OUTPUT_NAME test_occlusion_sli
                       PREFIX "")

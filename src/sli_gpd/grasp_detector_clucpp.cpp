@@ -135,6 +135,7 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
   }
   std::vector<Grasp> candidates_hand;
 
+  // get the size of all grasps
   for (int i = 0; i < candidates.size(); i++)
   {
     const std::vector<Grasp>& hands = candidates[i].getHypotheses();

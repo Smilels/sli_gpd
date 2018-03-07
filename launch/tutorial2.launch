@@ -70,6 +70,7 @@
     <param name="num_selected" value="5" />
     <param name="use_gmm" value="flase" />
     <param name="downward_filter" value="flase" />
+    <param name="select_strategy" value="flase" />
 	</node>
 
 </launch>
