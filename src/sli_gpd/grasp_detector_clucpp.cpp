@@ -258,13 +258,13 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
         std::cout << "Not enough valid grasps predicted! Using all grasps from previous step.\n";
         valid_grasps = extractHypotheses(candidates);
       }
-    double sum=0;
-    for (int i = 0; i < valid_grasps.size(); i++)
-    {
-      sum = sum + valid_grasps[i].getScore();
-    }
-    double score_mean= sum / (double) valid_grasps.size();
-    std::cout << "score_mean: " << score_mean << "\n";
+    // double sum=0;
+    // for (int i = 0; i < valid_grasps.size(); i++)
+    // {
+    //   sum = sum + valid_grasps[i].getScore();
+    // }
+    // double score_mean= sum / (double) valid_grasps.size();
+    // std::cout << "score_mean: " << score_mean << "\n";
 
     // 4. Cluster the grasps.
     if (cluster_grasps_)
@@ -283,13 +283,13 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
         plotter.plotFingers3D(clustered_grasps, cloud_cam.getCloudOriginal(), "Valid Grasps", params.hand_outer_diameter_,
           params.finger_width_, params.hand_depth_, params.hand_height_);
       }
-      double clu_sum=0;
-      for (int i = 0; i < clustered_grasps.size(); i++)
-      {
-        clu_sum = clu_sum + clustered_grasps[i].getScore();
-      }
-      double clu_score_mean= clu_sum / (double) clustered_grasps.size();
-      std::cout << "clu_score_mean: " << clu_score_mean << "\n";
+      // double clu_sum=0;
+      // for (int i = 0; i < clustered_grasps.size(); i++)
+      // {
+      //   clu_sum = clu_sum + clustered_grasps[i].getScore();
+      // }
+      // double clu_score_mean= clu_sum / (double) clustered_grasps.size();
+      // std::cout << "clu_score_mean: " << clu_score_mean << "\n";
     }
     else
     {

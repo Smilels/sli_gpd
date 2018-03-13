@@ -2,14 +2,13 @@
 
   <!-- Load hand geometry parameters -->
   <include file="$(find sli_gpd)/launch/hand_geometry.launch">
-    <arg name="node" value="generate_candidates" />
+    <arg name="node" value="generate_candidates_sli" />
   </include>
 
-	<node name="generate_candidates" pkg="sli_gpd" type="generate_candidates" output="screen">
+	<node name="generate_candidates_sli" pkg="sli_gpd" type="generate_candidates_sli" output="screen">
 
     <!-- Where the point cloud is stored -->
-  <param name="cloud_file_name" value="/homeL/demo/ws_grasp/src/ros_gpg/data/krylon.pcd" />
-
+    <param name="cloud_file_name" value="/homeL/demo/ws_grasp/src/ros_gpg/data/krylon.pcd" />
     <!-- Plotting parameters -->
 
     <!-- Preprocessing of point cloud -->
@@ -27,6 +26,6 @@
     <param name="num_orientations" value="8" /> <!-- Number of orientations to consider -->
 
     <!-- Filtering of grasp candidates -->
-    <param name="downward_filter" value="false"/>
+    <param name="downward_filter" value="true"/>
 	</node>
 </launch>

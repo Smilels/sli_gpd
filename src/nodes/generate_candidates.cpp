@@ -75,9 +75,11 @@ int main(int argc, char* argv[])
   const HandSearch::Parameters& params = candidates_generator.getHandSearchParams();
   plotter.plotFingers3D(candidates, cloud_cam.getCloudOriginal(), "Valid Grasps", params.hand_outer_diameter_,
     params.finger_width_, params.hand_depth_, params.hand_height_);
-std::vector<Grasp> val_hands;
+
+
   if (downward_filter_)
   {
+    std::vector<Grasp> val_hands;
     std::cout<<"use downward_filter_"<<std::endl;
     //listen to the transform, in order to transfer the vector
     //the transform from frame /table_top to frame kinect2_rgb_optical_frame.
@@ -112,18 +114,20 @@ std::vector<Grasp> val_hands;
         {
           Eigen::Matrix3d frame_mat;
           frame_mat=val_frame;
-          frame_mat.col(0)<<val_frame.col(0)[0],val_frame.col(0)[1],0;
+          frame_mat.col(0)<<val_frame.col(0)(0),val_frame.col(0)(1),0;
           frame_mat.col(2)=frame_mat.col(0).cross(frame_mat.col(1));
           //val_hands[j].pose_.frame_=trans.inverse()*frame_mat; //frame transfer back
           val_hands[j].pose_.frame_=frame_mat;
         }
       }
+      if (generator_params.plot_grasps_)
+      {
+        plotter.plotFingers3D(val_hands, cloud_cam.getCloudOriginal(), "Valid Grasps", params.hand_outer_diameter_,
+          params.finger_width_, params.hand_depth_, params.hand_height_);
+      }
     }
 
-  if (generator_params.plot_grasps_)
-  {
-    plotter.plotFingers(val_hands, cloud_cam.getCloudProcessed(), "Filtered Grasps");
-  }
+
 
   return 0;
 }

@@ -31,7 +31,7 @@
     <param name="plot_normals" value="false" />
     <param name="plot_samples" value="false" />
     <param name="plot_candidates" value="false" />
-    <param name="plot_filtered_grasps" value="true" />
+    <param name="plot_filtered_grasps" value="false" />
     <param name="plot_valid_grasps" value="flase" />
     <param name="plot_clusters" value="false" />
     <param name="plot_selected_grasps" value="true" />
@@ -44,7 +44,7 @@
     <rosparam param="camera_position"> [0, 0, 0] </rosparam>
 
     <!-- General parameters -->
-    <param name="num_samples" value="3" />
+    <param name="num_samples" value="100" />
     <param name="num_threads" value="4" />
 
     <!-- Parameters for local grasp candidate search -->
