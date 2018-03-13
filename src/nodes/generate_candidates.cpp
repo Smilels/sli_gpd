@@ -1,10 +1,14 @@
 // ROS
 #include <ros/ros.h>
-
+#include <Eigen/Dense>
+#include <Eigen/StdVector>
+#include <Eigen/Geometry>
+#include <tf/transform_listener.h>
+#include <tf_conversions/tf_eigen.h>
 // Custom
 #include <gpg/cloud_camera.h>
 #include <gpg/candidates_generator.h>
-
+#include <gpg/plot.h>
 
 int main(int argc, char* argv[])
 {
@@ -15,6 +19,7 @@ int main(int argc, char* argv[])
   // Create objects to store parameters
   CandidatesGenerator::Parameters generator_params;
   HandSearch::Parameters hand_search_params;
+  Plot plotter;
 
   // Read hand geometry parameters
   node.param("finger_width", hand_search_params.finger_width_, 0.01);
@@ -39,6 +44,8 @@ int main(int argc, char* argv[])
   node.param("remove_outliers", generator_params.remove_statistical_outliers_, true);
   node.param("voxelize", generator_params.voxelize_, true);
   node.getParam("workspace", generator_params.workspace_);
+  bool downward_filter_;
+  node.param("downward_filter", downward_filter_,true);
   std::vector<double> camera_position;
   node.getParam("camera_position", camera_position);
 
@@ -64,6 +71,59 @@ int main(int argc, char* argv[])
 
   // Generate grasp candidates.
   std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
+
+  const HandSearch::Parameters& params = candidates_generator.getHandSearchParams();
+  plotter.plotFingers3D(candidates, cloud_cam.getCloudOriginal(), "Valid Grasps", params.hand_outer_diameter_,
+    params.finger_width_, params.hand_depth_, params.hand_height_);
+std::vector<Grasp> val_hands;
+  if (downward_filter_)
+  {
+    std::cout<<"use downward_filter_"<<std::endl;
+    //listen to the transform, in order to transfer the vector
+    //the transform from frame /table_top to frame kinect2_rgb_optical_frame.
+    //tf::StampedTransform transform;
+    // try{
+    //   tf_listener->waitForTransform("kinect2_rgb_optical_frame","/table_top", ros::Time::now(),ros::Duration(5.0));
+    //   tf_listener->lookupTransform ("kinect2_rgb_optical_frame","/table_top", ros::Time(0), transform);
+    // }
+    // catch(std::runtime_error &e){
+    //   std::cout<<"tf listener between kinect2 and table_top happens error"<<std::endl;
+    //   return selected_grasps;
+    // }
+
+    // tf::Matrix3x3 uptf;
+    // uptf.setRotation(transform.inverse().getRotation());
+    // Eigen::Matrix3d trans;
+    // tf::matrixTFToEigen(uptf,trans);
+
+    //remedy invaild grasps
+      val_hands=candidates;
+      for (int j = 0; j < val_hands.size(); j++)
+      {
+        Eigen::Matrix3d val_frame=val_hands[j].getFrame();
+        //Eigen::Matrix3d val_frame=trans*frame_rot;// frame represents in table_top
+
+        //calculate the angle between upright direction and approach direction
+        tf::Vector3 cam_approch;
+        tf::vectorEigenToTF(val_frame.col(0),cam_approch);
+        tf::Vector3 cam_z=tf::Vector3 (0,0,1);
+        tfScalar up_angle=cam_approch.angle (cam_z);
+        if (up_angle*180/M_PI<90)
+        {
+          Eigen::Matrix3d frame_mat;
+          frame_mat=val_frame;
+          frame_mat.col(0)<<val_frame.col(0)[0],val_frame.col(0)[1],0;
+          frame_mat.col(2)=frame_mat.col(0).cross(frame_mat.col(1));
+          //val_hands[j].pose_.frame_=trans.inverse()*frame_mat; //frame transfer back
+          val_hands[j].pose_.frame_=frame_mat;
+        }
+      }
+    }
+
+  if (generator_params.plot_grasps_)
+  {
+    plotter.plotFingers(val_hands, cloud_cam.getCloudProcessed(), "Filtered Grasps");
+  }
 
   return 0;
 }

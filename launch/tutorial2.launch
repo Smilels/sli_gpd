@@ -62,6 +62,8 @@
 
     <!-- Clustering of grasps -->
     <param name="min_inliers" value="1" />
+    <!-- add a new paremeter  -->
+    <param name="cluster_grasps" value="false" />
 
     <!-- Grasp selection -->
     <param name="min_score_diff" value="0" />

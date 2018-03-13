@@ -90,7 +90,6 @@ add_executable(${PROJECT_NAME}_classify_candidates src/nodes/classify_candidates
 #add_executable(${PROJECT_NAME}_test_occlusion src/tests/test_occlusion.cpp)
 
 add_executable(${PROJECT_NAME}_detect_grasps_gmm src/nodes/grasp_detection_node_gmm.cpp)
-
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(grasp_candidates_classifier_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -223,3 +222,7 @@ set_target_properties(${PROJECT_NAME}_classify_candidates
 #set_target_properties(${PROJECT_NAME}_test_occlusion
 #                      PROPERTIES OUTPUT_NAME test_occlusion_sli
 #                      PREFIX "")
+
+set_target_properties(${PROJECT_NAME}_generate_candidates
+                      PROPERTIES OUTPUT_NAME generate_candidates_sli
+                      PREFIX "")
