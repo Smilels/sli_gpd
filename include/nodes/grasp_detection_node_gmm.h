@@ -61,7 +61,7 @@
 #include <gpd/SamplesMsg.h>
 
 // this project (headers)
-#include "../gpd/grasp_detector_gmm.h"
+#include "../gpd/grasp_detector_clu.h"
 #include "../gpd/sequential_importance_sampling.h"
 
 

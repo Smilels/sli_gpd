@@ -21,10 +21,10 @@ find_package(OpenCV)
 find_package(message_generation)
 
 #find_library(GENERATOR_LIB_SLI grasp_candidates_generator_ros HINTS "/homeL/demo/ws_grasp/devel/lib/")
-find_path(GENERATOR_LIB_SLI_INCLUDE_DIR gpg/grasp.h HINTS "/homeL/demo/ws_grasp/src/ros_gpg/include")
-include_directories(${GENERATOR_LIB_SLI_INCLUDE_DIR})
+#find_path(GENERATOR_LIB_SLI_INCLUDE_DIR gpg/grasp.h HINTS "/homeL/demo/ws_grasp/src/ros_gpg/include")
+#include_directories(${GENERATOR_LIB_SLI_INCLUDE_DIR})
 #message("ros_gpg_DIR: " ${GENERATOR_LIB_SLI})
-message("ros_gpg_include_DIR: " ${GENERATOR_LIB_SLI_INCLUDE_DIR} )
+#message("ros_gpg_include_DIR: " ${GENERATOR_LIB_SLI_INCLUDE_DIR} )
 # CAFFE
 IF(NOT EXISTS ${CAFFE_DIR})
   SET(CAFFE_DIR "$ENV{CAFFE_DIR}")
@@ -67,25 +67,27 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_
 add_library(${PROJECT_NAME}_caffe_classifier src/${PROJECT_NAME}/caffe_classifier.cpp)
 add_library(${PROJECT_NAME}_clustering src/${PROJECT_NAME}/clustering.cpp)
 add_library(${PROJECT_NAME}_data_generator src/${PROJECT_NAME}/data_generator.cpp)
-add_library(${PROJECT_NAME}_grasp_detector src/${PROJECT_NAME}/grasp_detector.cpp)
+#add_library(${PROJECT_NAME}_grasp_detector src/${PROJECT_NAME}/grasp_detector.cpp)
 add_library(${PROJECT_NAME}_learning src/${PROJECT_NAME}/learning.cpp)
 add_library(${PROJECT_NAME}_sequential_importance_sampling src/${PROJECT_NAME}/sequential_importance_sampling.cpp)
 add_library(${PROJECT_NAME}_grasp_image src/${PROJECT_NAME}/grasp_image.cpp)
 add_library(${PROJECT_NAME}_grasp_image_15_channels src/${PROJECT_NAME}/grasp_image_15_channels.cpp)
 
-add_library(${PROJECT_NAME}_grasp_detector_gmm src/${PROJECT_NAME}/grasp_detector_gmm.cpp)
+#add_library(${PROJECT_NAME}_grasp_detector_gmm src/${PROJECT_NAME}/grasp_detector_gmm.cpp)
+add_library(${PROJECT_NAME}_grasp_detector_clucpp src/${PROJECT_NAME}/grasp_detector_clucpp.cpp)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 # add_dependencies(grasp_candidates_classifier ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare C++ executables
-add_executable(${PROJECT_NAME}_detect_grasps src/nodes/grasp_detection_node.cpp)
+#add_executable(${PROJECT_NAME}_detect_grasps src/nodes/grasp_detection_node.cpp)
 add_executable(${PROJECT_NAME}_generate_candidates src/nodes/generate_candidates.cpp)
-add_executable(${PROJECT_NAME}_create_grasp_images src/nodes/create_grasp_images.cpp)
-add_executable(${PROJECT_NAME}_create_training_data src/nodes/create_training_data.cpp)
+#add_executable(${PROJECT_NAME}_create_grasp_images src/nodes/create_grasp_images.cpp)
+#add_executable(${PROJECT_NAME}_create_training_data src/nodes/create_training_data.cpp)
 add_executable(${PROJECT_NAME}_classify_candidates src/nodes/classify_candidates.cpp)
-add_executable(${PROJECT_NAME}_test_occlusion src/tests/test_occlusion.cpp)
+#add_executable(${PROJECT_NAME}_test_occlusion src/tests/test_occlusion.cpp)
 
 add_executable(${PROJECT_NAME}_detect_grasps_gmm src/nodes/grasp_detection_node_gmm.cpp)
 
@@ -101,14 +103,14 @@ target_link_libraries(${PROJECT_NAME}_caffe_classifier
 target_link_libraries(${PROJECT_NAME}_clustering
                       ros_gpg_grasp_candidates_generator)
 
-target_link_libraries(${PROJECT_NAME}_create_grasp_images
-                      ${PROJECT_NAME}_learning
-                      ros_gpg_grasp_candidates_generator
-                      ${catkin_LIBRARIES}
-                      ${PCL_LIBRARIES})
+#target_link_libraries(${PROJECT_NAME}_create_grasp_images
+#                      ${PROJECT_NAME}_learning
+#                      ros_gpg_grasp_candidates_generator
+#                      ${catkin_LIBRARIES}
+#                      ${PCL_LIBRARIES})
 
-target_link_libraries(${PROJECT_NAME}_create_training_data
-                      ${PROJECT_NAME}_data_generator)
+#target_link_libraries(${PROJECT_NAME}_create_training_data
+#                      ${PROJECT_NAME}_data_generator)
 
 target_link_libraries(${PROJECT_NAME}_data_generator
                       ${PROJECT_NAME}_learning
@@ -123,23 +125,32 @@ target_link_libraries(${PROJECT_NAME}_generate_candidates
                       ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_classify_candidates
-                      ${PROJECT_NAME}_grasp_detector
+                      ${PROJECT_NAME}_grasp_detector_clucpp
                       ${PROJECT_NAME}_sequential_importance_sampling
                       ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
 
-target_link_libraries(${PROJECT_NAME}_grasp_detector
-                      ${PROJECT_NAME}_caffe_classifier
-                      ${PROJECT_NAME}_clustering
-                      ${PROJECT_NAME}_learning
-                      ros_gpg_grasp_candidates_generator
-                      ${catkin_LIBRARIES}
-                      ${Caffe_LIBRARIES}
-                      ${ARMADILLO_LIBRARIES})
+#target_link_libraries(${PROJECT_NAME}_grasp_detector
+#                      ${PROJECT_NAME}_caffe_classifier
+#                      ${PROJECT_NAME}_clustering
+#                      ${PROJECT_NAME}_learning
+#                      ros_gpg_grasp_candidates_generator
+#                      ${catkin_LIBRARIES}
+#                      ${Caffe_LIBRARIES}
+#                      ${ARMADILLO_LIBRARIES})
 
-target_link_libraries(${PROJECT_NAME}_grasp_detector_gmm
+#target_link_libraries(${PROJECT_NAME}_grasp_detector_gmm
+#                      ${PROJECT_NAME}_caffe_classifier
+#                      ${PROJECT_NAME}_clustering
+#                      ${PROJECT_NAME}_learning
+#                      ros_gpg_grasp_candidates_generator
+#                      ${catkin_LIBRARIES}
+#                      ${Caffe_LIBRARIES}
+#                      ${ARMADILLO_LIBRARIES})
+
+target_link_libraries(${PROJECT_NAME}_grasp_detector_clucpp
                       ${PROJECT_NAME}_caffe_classifier
                       ${PROJECT_NAME}_clustering
                       ${PROJECT_NAME}_learning
@@ -158,56 +169,57 @@ target_link_libraries(${PROJECT_NAME}_learning
                       ${PROJECT_NAME}_grasp_image_15_channels
                       ros_gpg_grasp_candidates_generator)
 
-target_link_libraries(${PROJECT_NAME}_detect_grasps
-                      ${PROJECT_NAME}_grasp_detector
-                      ${PROJECT_NAME}_sequential_importance_sampling
-                      ros_gpg_grasp_candidates_generator
-                      ${PCL_LIBRARIES}
-                      ${ARMADILLO_LIBRARIES})
+#target_link_libraries(${PROJECT_NAME}_detect_grasps
+#                      ${PROJECT_NAME}_grasp_detector
+#                      ${PROJECT_NAME}_sequential_importance_sampling
+#                      ros_gpg_grasp_candidates_generator
+#                      ${PCL_LIBRARIES}
+#                      ${ARMADILLO_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_detect_grasps_gmm
-                      ${PROJECT_NAME}_grasp_detector_gmm
+                      ${PROJECT_NAME}_grasp_detector_clucpp
                       ${PROJECT_NAME}_sequential_importance_sampling
                       ros_gpg_grasp_candidates_generator
                       ${PCL_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_sequential_importance_sampling
-                      ${PROJECT_NAME}_grasp_detector
+                      ${PROJECT_NAME}_grasp_detector_clucpp
                       ${ARMADILLO_LIBRARIES})
 
-target_link_libraries(${PROJECT_NAME}_test_occlusion
-                      ${PROJECT_NAME}_learning
-                      ros_gpg_grasp_candidates_generator
-                      ${catkin_LIBRARIES}
-                      ${PCL_LIBRARIES}
-                      ${Caffe_LIBRARIES})
+#target_link_libraries(${PROJECT_NAME}_test_occlusion
+#                      ${PROJECT_NAME}_learning
+#                      ros_gpg_grasp_candidates_generator
+#                      ${catkin_LIBRARIES}
+#                      ${PCL_LIBRARIES}
+#                      ${Caffe_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_learning
                       ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${Caffe_LIBRARIES})
+
 # Rename targets to simplify their names.
-set_target_properties(${PROJECT_NAME}_detect_grasps
-                      PROPERTIES OUTPUT_NAME detect_grasps_sli
-                      PREFIX "")
+#set_target_properties(${PROJECT_NAME}_detect_grasps
+#                      PROPERTIES OUTPUT_NAME detect_grasps_sli
+#                      PREFIX "")
 
 set_target_properties(${PROJECT_NAME}_detect_grasps_gmm
-                      PROPERTIES OUTPUT_NAME detect_grasps_sli
+                      PROPERTIES OUTPUT_NAME detect_grasps_gmm
                       PREFIX "")
 
 set_target_properties(${PROJECT_NAME}_classify_candidates
                       PROPERTIES OUTPUT_NAME classify_candidates_sli
                       PREFIX "")
 
-set_target_properties(${PROJECT_NAME}_create_grasp_images
-                      PROPERTIES OUTPUT_NAME create_grasp_images_sli
-                      PREFIX "")
+#set_target_properties(${PROJECT_NAME}_create_grasp_images
+#                      PROPERTIES OUTPUT_NAME create_grasp_images_sli
+#                      PREFIX "")
 
-set_target_properties(${PROJECT_NAME}_create_training_data
-                      PROPERTIES OUTPUT_NAME create_training_data_sli
-                      PREFIX "")
+#set_target_properties(${PROJECT_NAME}_create_training_data
+#                      PROPERTIES OUTPUT_NAME create_training_data_sli
+#                      PREFIX "")
 
-set_target_properties(${PROJECT_NAME}_test_occlusion
-                      PROPERTIES OUTPUT_NAME test_occlusion_sli
-                      PREFIX "")
+#set_target_properties(${PROJECT_NAME}_test_occlusion
+#                      PROPERTIES OUTPUT_NAME test_occlusion_sli
+#                      PREFIX "")
