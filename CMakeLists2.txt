@@ -5,7 +5,7 @@ project(sli_gpd)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS cmake_modules eigen_conversions tf tf_conversions geometry_msgs message_generation roscpp
-  sensor_msgs std_msgs)
+  sensor_msgs std_msgs ros_gpg)
 
 # PCL
 find_package(Armadillo REQUIRED)
@@ -20,11 +20,11 @@ find_package(OpenCV)
 # custom messages
 find_package(message_generation)
 
-find_library(GENERATOR_LIB_SLI grasp_candidates_generator_sli HINTS "/homeL/demo/overlays/sli_gpg/lib")
-find_path(GENERATOR_LIB_SLI_INCLUDE_DIR gpg/grasp.h HINTS "/homeL/demo/overlays/sli_gpg/include")
-include_directories(${GENERATOR_LIB_SLI_INCLUDE_DIR})
-message("ros_gpg_DIR: " ${GENERATOR_LIB_SLI})
-message("ros_gpg_include_DIR: " ${GENERATOR_LIB_SLI_INCLUDE_DIR} )
+#find_library(GENERATOR_LIB_SLI grasp_candidates_generator_ros HINTS "/homeL/demo/ws_grasp/devel/lib/")
+#find_path(GENERATOR_LIB_SLI_INCLUDE_DIR gpg/grasp.h HINTS "/homeL/demo/ws_grasp/src/ros_gpg/include")
+#include_directories(${GENERATOR_LIB_SLI_INCLUDE_DIR})
+#message("ros_gpg_DIR: " ${GENERATOR_LIB_SLI})
+#message("ros_gpg_include_DIR: " ${GENERATOR_LIB_SLI_INCLUDE_DIR} )
 
 find_package(Caffe)
 include_directories(${Caffe_INCLUDE_DIRS})
@@ -95,11 +95,11 @@ target_link_libraries(${PROJECT_NAME}_caffe_classifier
                       ${OpenCV_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_clustering
-                      ${GENERATOR_LIB_SLI})
+                      ros_gpg_grasp_candidates_generator)
 
 #target_link_libraries(${PROJECT_NAME}_create_grasp_images
 #                      ${PROJECT_NAME}_learning
-#                      ${GENERATOR_LIB_SLI}
+#                      ros_gpg_grasp_candidates_generator
 #                      ${catkin_LIBRARIES}
 #                      ${PCL_LIBRARIES})
 
@@ -108,20 +108,20 @@ target_link_libraries(${PROJECT_NAME}_clustering
 
 target_link_libraries(${PROJECT_NAME}_data_generator
                       ${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${Caffe_LIBRARIES}
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_generate_candidates
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_classify_candidates
                       ${PROJECT_NAME}_grasp_detector_clucpp
                       ${PROJECT_NAME}_sequential_importance_sampling
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${PCL_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
@@ -130,7 +130,7 @@ target_link_libraries(${PROJECT_NAME}_classify_candidates
 #                      ${PROJECT_NAME}_caffe_classifier
 #                      ${PROJECT_NAME}_clustering
 #                      ${PROJECT_NAME}_learning
-#                      ${GENERATOR_LIB_SLI}
+#                      ros_gpg_grasp_candidates_generator
 #                      ${catkin_LIBRARIES}
 #                      ${Caffe_LIBRARIES}
 #                      ${ARMADILLO_LIBRARIES})
@@ -139,7 +139,7 @@ target_link_libraries(${PROJECT_NAME}_classify_candidates
 #                      ${PROJECT_NAME}_caffe_classifier
 #                      ${PROJECT_NAME}_clustering
 #                      ${PROJECT_NAME}_learning
-#                      ${GENERATOR_LIB_SLI}
+#                      ros_gpg_grasp_candidates_generator
 #                      ${catkin_LIBRARIES}
 #                      ${Caffe_LIBRARIES}
 #                      ${ARMADILLO_LIBRARIES})
@@ -148,7 +148,7 @@ target_link_libraries(${PROJECT_NAME}_grasp_detector_clucpp
                       ${PROJECT_NAME}_caffe_classifier
                       ${PROJECT_NAME}_clustering
                       ${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${Caffe_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
@@ -161,19 +161,19 @@ target_link_libraries(${PROJECT_NAME}_grasp_image_15_channels
 
 target_link_libraries(${PROJECT_NAME}_learning
                       ${PROJECT_NAME}_grasp_image_15_channels
-                      ${GENERATOR_LIB_SLI})
+                      ros_gpg_grasp_candidates_generator)
 
 #target_link_libraries(${PROJECT_NAME}_detect_grasps
 #                      ${PROJECT_NAME}_grasp_detector
 #                      ${PROJECT_NAME}_sequential_importance_sampling
-#                      ${GENERATOR_LIB_SLI}
+#                      ros_gpg_grasp_candidates_generator
 #                      ${PCL_LIBRARIES}
 #                      ${ARMADILLO_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_detect_grasps_gmm
                       ${PROJECT_NAME}_grasp_detector_clucpp
                       ${PROJECT_NAME}_sequential_importance_sampling
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${PCL_LIBRARIES}
                       ${ARMADILLO_LIBRARIES})
 
@@ -183,13 +183,13 @@ target_link_libraries(${PROJECT_NAME}_sequential_importance_sampling
 
 #target_link_libraries(${PROJECT_NAME}_test_occlusion
 #                      ${PROJECT_NAME}_learning
-#                      ${GENERATOR_LIB_SLI}
+#                      ros_gpg_grasp_candidates_generator
 #                      ${catkin_LIBRARIES}
 #                      ${PCL_LIBRARIES}
 #                      ${Caffe_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME}_learning
-                      ${GENERATOR_LIB_SLI}
+                      ros_gpg_grasp_candidates_generator
                       ${catkin_LIBRARIES}
                       ${Caffe_LIBRARIES})
 

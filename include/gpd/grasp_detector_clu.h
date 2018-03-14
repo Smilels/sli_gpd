@@ -218,6 +218,9 @@ private:
   bool select_strategy_;
   // selection parameters
   int num_selected_; ///< the number of selected grasps
+  double  ori_prama_;
+  double  mean_prama_;
+  int min_inliers;
 };
 
 #endif /* GRASP_DETECTOR_H_ */
