@@ -534,7 +534,7 @@ std::vector<Grasp> GraspDetector::classifyGraspClusters(const CloudCamera& cloud
 {
   // Create a grasp image for each grasp candidate.
   double t0 = omp_get_wtime();
-  std::cout << "Creating grasp images for classifier input ...\n";
+  std::cout << "Creating grasp Clusters images for classifier input ...\n";
   std::vector<float> scores;
   std::vector<Grasp> grasp_list;
   {
