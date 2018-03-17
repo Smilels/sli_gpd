@@ -164,6 +164,10 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
       tf_listener->waitForTransform("kinect2_rgb_optical_frame","table_top", ros::Time::now(),ros::Duration(5.0));
       tf_listener->lookupTransform ("kinect2_rgb_optical_frame","table_top", ros::Time(0), transform);
     }
+    // try{
+    //   tf_listener->waitForTransform("table_top", "kinect2_rgb_optical_frame", ros::Time::now(),ros::Duration(5.0));
+    //   tf_listener->lookupTransform ("table_top", "kinect2_rgb_optical_frame", ros::Time(0), transform);
+    // }
     catch(std::runtime_error &e){
       std::cout<<"tf listener between kinect2 and table_top happens error"<<std::endl;
       return selected_grasps;
@@ -171,6 +175,7 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
 
     tf::Matrix3x3 uptf;
     uptf.setRotation(transform.inverse().getRotation());
+    //uptf.setRotation(transform.getRotation());
     Eigen::Matrix3d trans;
     tf::matrixTFToEigen(uptf,trans);
 
@@ -196,7 +201,14 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
           frame_mat=val_frame;
           frame_mat.col(0)<<val_frame.col(0)[0],val_frame.col(0)[1],0;
           frame_mat.col(2)=frame_mat.col(0).cross(frame_mat.col(1));
-          val_hands[j].pose_.frame_=trans.inverse()*frame_mat; //frame transfer back
+          // Eigen::Matrix3d y_rot;
+          // double up_de;
+          // up_de=atan2(val_frame.col(0)[0],val_frame.col(0)[1]);
+          // y_rot << cos(up_de),  0.0,   sin(up_de),
+          //           0.0,             1.0,   0.0,
+          //         -sin(y_space(up_de)),  0.0,   cos(up_de);
+          // frame_mat=val_frame * y_rot;
+          val_hands[j].pose_.frame_=trans.inverse()*frame_mat;//frame transfer back
         }
       }
       candidates[n].setHands(val_hands);
