@@ -153,7 +153,8 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
   {
     plotter.plotFingers(candidates, cloud_cam.getCloudProcessed(), "Filtered Grasps");
   }
-
+  std::vector<Grasp> val_show;
+  std::vector<Grasp> val_before;
   if (downward_filter_)
   {
     std::cout<<"use downward_filter_"<<std::endl;
@@ -182,9 +183,11 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
     //remedy invaild grasps
     for (int n=0; n< candidates.size();n++)
     {
-      std::cout<< "downward_filter_ some candidates"<<std::endl;
+      // std::cout<< "downward_filter_ some candidates"<<std::endl;
       const std::vector<Grasp>& hands = candidates[n].getHypotheses();
       std::vector<Grasp> val_hands=hands;
+
+
       for (int j = 0; j < val_hands.size(); j++)
       {
         Eigen::Matrix3d frame_rot=val_hands[j].getFrame();
@@ -197,28 +200,45 @@ std::vector<Grasp> GraspDetector::detectGrasps(const CloudCamera& cloud_cam)
         tfScalar up_angle=cam_approch.angle (cam_z);
         if (up_angle*180/M_PI<90)
         {
+          // std::cout<< "downward_filter_ some candidates"<<std::endl;
+          val_before.push_back(val_hands[j]);
           Eigen::Matrix3d frame_mat;
-          frame_mat=val_frame;
-          frame_mat.col(0)<<val_frame.col(0)[0],val_frame.col(0)[1],0;
-          frame_mat.col(2)=frame_mat.col(0).cross(frame_mat.col(1));
-          // Eigen::Matrix3d y_rot;
-          // double up_de;
-          // up_de=atan2(val_frame.col(0)[0],val_frame.col(0)[1]);
-          // y_rot << cos(up_de),  0.0,   sin(up_de),
-          //           0.0,             1.0,   0.0,
-          //         -sin(y_space(up_de)),  0.0,   cos(up_de);
-          // frame_mat=val_frame * y_rot;
+          // frame_mat=val_frame;
+          // frame_mat.col(0)<<val_frame.col(0)[0],val_frame.col(0)[1],0;
+          // frame_mat.col(2)=frame_mat.col(0).cross(frame_mat.col(1));
+          Eigen::Matrix3d y_rot;
+          double up_de,up_de1,up_de2;
+          up_de1=atan2(val_frame.col(0)[2],val_frame.col(2)[2]);
+          up_de2=atan2(-val_frame.col(0)[2],-val_frame.col(2)[2]);
+          if (std::fabs(up_de1)<std::fabs(up_de2))
+            up_de=up_de1;
+          else
+            up_de=up_de2;
+          y_rot << cos(up_de),  0.0,   sin(up_de),
+                    0.0,        1.0,   0.0,
+                  -sin(up_de),  0.0,   cos(up_de);
+          frame_mat=val_frame * y_rot;
           val_hands[j].pose_.frame_=trans.inverse()*frame_mat;//frame transfer back
+          val_show.push_back(val_hands[j]);
         }
       }
       candidates[n].setHands(val_hands);
     }
+    // std::vector<Grasp> val_show1;
+    // std::vector<Grasp> val_before1;
+    // for (int j = 0; j < 3; j++)
+    // {
+    //   val_show1.push_back(val_show[j]);
+    //   val_before1.push_back(val_before[j]);}
+    // if (plot_filtered_grasps_)
+    // {
+    //   plotter.plotFingers(val_before1, cloud_cam.getCloudProcessed(), "before Filtered Grasps");
+    //   plotter.plotFingers(val_show1, cloud_cam.getCloudProcessed(), "after Filtered Grasps");
+    // }
   }
 
-  if (plot_filtered_grasps_)
-  {
-    plotter.plotFingers(candidates, cloud_cam.getCloudProcessed(), "Filtered Grasps");
-  }
+
+
   // 2.1 Prune grasp candidates based on min. and max. robot hand aperture and fingers below table surface.
   if (filter_grasps_)
   {
@@ -800,7 +820,7 @@ std::vector<Grasp> GraspDetector::GenerateClusters(const CloudCamera& cloud_cam,
   }
   std::vector<Grasp> rank_grasps;
   std::vector<int> inliers;
-  int num_strategy_ =30;
+  int num_strategy_ =num_selected_;
   std::cout << "Sorting the grasps based on their score ... \n";
   std::sort(hand_list.begin(), hand_list.end(), isScoreGreater);
   rank_grasps = hand_list;
@@ -885,7 +905,7 @@ std::vector<Grasp> GraspDetector::GenerateClusters(const CloudCamera& cloud_cam,
         Eigen::Vector3d zdists_ ;
         zdists_<<-0.015, 0.015,0;
         Eigen::Vector3d ydists_;
-         ydists_<< -0.015, 0.015,0;
+        ydists_<< -0.015, 0.015,0;
         for (int d = 0; d < zdists_.rows(); d++)
         {
           for (int t = 0; t < ydists_.rows(); t++)
